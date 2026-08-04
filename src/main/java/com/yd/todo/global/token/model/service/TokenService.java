@@ -1,4 +1,4 @@
-package com.yd.todo.global.token.service;
+package com.yd.todo.global.token.model.service;
 
 import java.util.Map;
 
@@ -7,9 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.yd.todo.global.exception.token.InvalidRefreshTokenException;
 import com.yd.todo.global.exception.token.RefreshTokenExpiredException;
-import com.yd.todo.global.token.entity.RefreshToken;
-import com.yd.todo.global.token.repository.RefreshTokenRepository;
-import com.yd.todo.global.token.util.JwtUtil;
+import com.yd.todo.global.token.model.entity.RefreshToken;
+import com.yd.todo.global.token.model.repository.RefreshTokenRepository;
+import com.yd.todo.global.token.model.util.JwtUtil;
 
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;

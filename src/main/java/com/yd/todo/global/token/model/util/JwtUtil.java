@@ -1,4 +1,4 @@
-package com.yd.todo.global.token.util;
+package com.yd.todo.global.token.model.util;
 
 import java.time.Duration;
 import java.time.Instant;

@@ -1,4 +1,4 @@
-package com.yd.todo.global.token.entity;
+package com.yd.todo.global.token.model.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

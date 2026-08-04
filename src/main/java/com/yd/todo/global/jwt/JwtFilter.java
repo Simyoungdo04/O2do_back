@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.yd.todo.global.auth.LoginUser;
-import com.yd.todo.global.token.util.JwtUtil;
+import com.yd.todo.global.token.model.util.JwtUtil;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -33,9 +33,11 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getRequestURI();
-        return uri.equals("/api/user/login/kakao");
+        return uri.equals("/api/user/login/kakao")
+                || uri.equals("/oauth/callback")
+                || uri.equals("/api/token/refresh");
     }
-
+    
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {

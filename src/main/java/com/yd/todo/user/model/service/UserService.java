@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.yd.todo.global.exception.user.UserNotFoundException;
-import com.yd.todo.global.token.service.TokenService;
+import com.yd.todo.global.token.model.service.TokenService;
 import com.yd.todo.user.model.dto.LoginResponse;
 import com.yd.todo.user.model.dto.UserResponse;
 import com.yd.todo.user.model.entity.User;
