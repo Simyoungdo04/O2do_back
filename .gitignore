@@ -46,7 +46,7 @@ logs/
 # ---------- 민감 정보 (★ 반드시 제외) ----------
 src/main/resources/application-private.yml
 src/main/resources/application-kakao.yml
-src/main/resources/application-secret.yml
+src/main/resources/application.yml
 *.env
 .env
 
