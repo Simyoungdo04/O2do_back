@@ -1,0 +1,58 @@
+# ---------- Java / Gradle or Maven 빌드 산출물 ----------
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+*.class
+
+# ---------- STS / Eclipse ----------
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# ---------- IntelliJ (혹시 나중에 옮길 경우 대비) ----------
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+
+# ---------- VS Code ----------
+.vscode/
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+
+# ---------- 로그 ----------
+*.log
+logs/
+
+# ---------- 민감 정보 (★ 반드시 제외) ----------
+src/main/resources/application-private.yml
+src/main/resources/application-kakao.yml
+src/main/resources/application-secret.yml
+*.env
+.env
+
+# ---------- 프론트(React/Vite) 관련 - 나중에 붙일 경우 대비 ----------
+node_modules/
+dist/
+.env.local
+.env.*.local
+npm-debug.log*

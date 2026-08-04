@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: todo
+  profiles:
+    include:
+    - private
+    - kakao
+
+server:
+  port: 81
+
+jwt:
+  secret: D9uLKVc4FE0IEheN3pLLEb8GKhHRsG8cdOxazHnEkRm3CGAeB+xVbt8Dbob1QhRB
