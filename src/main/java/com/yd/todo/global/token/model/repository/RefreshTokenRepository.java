@@ -13,4 +13,8 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     @Transactional
     void deleteByUserIdAndToken(Long userId, String token);
+
+    // 회원 탈퇴 시 해당 유저의 REFRESH_TOKEN 전체 삭제
+    @Transactional
+    void deleteByUserId(Long userId);
 }

@@ -17,6 +17,7 @@ public class TodoResponse {
     private boolean done;
     private Long originTodoId;
     private int carryOverDays;   // 같은 origin을 가진 TODO 개수 = "며칠째 이월 중인지"
+    private Long postponedTodoId;   // 내일로 미룬 경우 그 복제본의 id (미루지 않았으면 null)
 
     public static TodoResponse from(Todo todo, int carryOverDays) {
         return TodoResponse.builder()
@@ -28,6 +29,7 @@ public class TodoResponse {
                 .done(todo.isDone())
                 .originTodoId(todo.getOriginTodoId())
                 .carryOverDays(carryOverDays)
+                .postponedTodoId(todo.getPostponedTodoId())
                 .build();
     }
 }

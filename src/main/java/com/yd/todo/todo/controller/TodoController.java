@@ -1,9 +1,11 @@
 package com.yd.todo.todo.controller;
 
+import com.yd.todo.dailyList.model.dto.DailyListWithTodosResponse;
 import com.yd.todo.global.auth.LoginUser;
 import com.yd.todo.global.common.ApiResponse;
 import com.yd.todo.todo.model.dto.TodoCreateRequest;
 import com.yd.todo.todo.model.dto.TodoResponse;
+import com.yd.todo.todo.model.dto.TodoStatsResponse;
 import com.yd.todo.todo.model.dto.TodoUpdateRequest;
 import com.yd.todo.todo.model.service.TodoService;
 
@@ -28,6 +30,24 @@ public class TodoController {
 
         List<TodoResponse> response = todoService.findTodayTodos(loginUser.getUserId());
         return ResponseEntity.ok(ApiResponse.success(200, "조회 성공", response));
+    }
+
+    // 사이드바 통계: 총 완료 개수 + 오늘 기준 이월 중인 개수
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<TodoStatsResponse>> stats(
+            @AuthenticationPrincipal LoginUser loginUser) {
+
+        TodoStatsResponse response = todoService.getStats(loginUser.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(200, "통계 조회 성공", response));
+    }
+
+    // 오늘 이전 날짜의 미완료 TODO를 날짜별로 모아서 조회
+    @GetMapping("/incomplete-history")
+    public ResponseEntity<ApiResponse<List<DailyListWithTodosResponse>>> incompleteHistory(
+            @AuthenticationPrincipal LoginUser loginUser) {
+
+        List<DailyListWithTodosResponse> response = todoService.getIncompleteHistory(loginUser.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(200, "미완료 기록 조회 성공", response));
     }
 
     // TODO 생성
@@ -69,6 +89,26 @@ public class TodoController {
 
         TodoResponse response = todoService.carryOver(loginUser.getUserId(), id);
         return ResponseEntity.ok(ApiResponse.success(200, "이월 성공", response));
+    }
+
+    // 오늘의 미완료 TODO를 내일로 미루기
+    @PostMapping("/{id}/postpone")
+    public ResponseEntity<ApiResponse<TodoResponse>> postpone(
+            @AuthenticationPrincipal LoginUser loginUser,
+            @PathVariable("id") Long id) {
+
+        TodoResponse response = todoService.postponeToTomorrow(loginUser.getUserId(), id);
+        return ResponseEntity.ok(ApiResponse.success(200, "내일로 미루기 성공", response));
+    }
+
+    // 내일로 미루기 취소
+    @DeleteMapping("/{id}/postpone")
+    public ResponseEntity<ApiResponse<Void>> cancelPostpone(
+            @AuthenticationPrincipal LoginUser loginUser,
+            @PathVariable("id") Long id) {
+
+        todoService.cancelPostpone(loginUser.getUserId(), id);
+        return ResponseEntity.ok(ApiResponse.success(200, "미루기 취소 성공", null));
     }
 
     // TODO 삭제

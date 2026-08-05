@@ -40,6 +40,9 @@ public class Todo {
     @Column(name = "origin_todo_id")
     private Long originTodoId;   // 최초 원본 TODO id (이월 추적용, 원본이면 자기 자신의 id)
 
+    @Column(name = "postponed_todo_id")
+    private Long postponedTodoId;   // 내일로 미룬 경우 그 복제본의 id (미루지 않았으면 null)
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -78,6 +81,19 @@ public class Todo {
         if (this.originTodoId == null) {
             this.originTodoId = this.id;
         }
+    }
+
+    // 내일로 미룸: 복제본의 id를 기록해두고, 이 TODO는 '오늘의 할 일'에서 제외됨
+    public void postpone(Long postponedTodoId) {
+        this.postponedTodoId = postponedTodoId;
+    }
+
+    public void cancelPostpone() {
+        this.postponedTodoId = null;
+    }
+
+    public boolean isPostponed() {
+        return this.postponedTodoId != null;
     }
 
     // 이 TODO가 특정 유저 소유인지 확인 (컨트롤러/서비스에서 권한 체크용)

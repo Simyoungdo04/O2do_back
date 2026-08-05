@@ -5,8 +5,11 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.yd.todo.dailyList.model.repository.DailyListRepository;
 import com.yd.todo.global.exception.user.UserNotFoundException;
+import com.yd.todo.global.token.model.repository.RefreshTokenRepository;
 import com.yd.todo.global.token.model.service.TokenService;
+import com.yd.todo.todo.model.repository.TodoRepository;
 import com.yd.todo.user.model.dto.LoginResponse;
 import com.yd.todo.user.model.dto.UserResponse;
 import com.yd.todo.user.model.entity.User;
@@ -24,6 +27,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final KakaoService kakaoService;
     private final TokenService tokenService;
+    private final TodoRepository todoRepository;
+    private final DailyListRepository dailyListRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     // 카카오 로그인 = 신규면 가입, 기존이면 로그인 (인가코드 하나로 전부 처리)
     @Transactional
@@ -57,5 +63,17 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("존재하지 않는 사용자입니다."));
         return UserResponse.from(user);
+    }
+
+    // 회원 탈퇴: TODO → DAILY_LIST → REFRESH_TOKEN → USER 순으로 연쇄 삭제
+    @Transactional
+    public void withdraw(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("존재하지 않는 사용자입니다."));
+
+        todoRepository.deleteByDailyList_User_Id(userId);
+        dailyListRepository.deleteByUserId(userId);
+        refreshTokenRepository.deleteByUserId(userId);
+        userRepository.delete(user);
     }
 }

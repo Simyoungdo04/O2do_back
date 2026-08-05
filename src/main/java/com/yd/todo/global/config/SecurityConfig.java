@@ -36,7 +36,6 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(requests -> requests
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/oauth/callback").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/user/login/kakao/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/token/refresh").permitAll()   // 추가
                         .anyRequest().authenticated()
