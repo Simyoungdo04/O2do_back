@@ -1,6 +1,7 @@
 package com.yd.todo.dailyList.controller;
 
 import com.yd.todo.dailyList.model.dto.DailyListResponse;
+import com.yd.todo.dailyList.model.dto.DailySummaryResponse;
 import com.yd.todo.dailyList.model.dto.DailyListWithTodosResponse;
 import com.yd.todo.dailyList.model.entity.DailyList;
 import com.yd.todo.dailyList.model.service.DailyListService;
@@ -41,6 +42,17 @@ public class DailyListController {
         DailyList dailyList = dailyListService.getByDate(loginUser.getUserId(), date);
         List<TodoResponse> todos = todoService.findTodosByDailyListId(dailyList.getId());
         DailyListWithTodosResponse response = DailyListWithTodosResponse.of(dailyList, todos);
+        return ResponseEntity.ok(ApiResponse.success(200, "조회 성공", response));
+    }
+
+    // 달력 마킹용: 기간 내 날짜별 완료/전체 개수 요약
+    @GetMapping("/summary")
+    public ResponseEntity<ApiResponse<List<DailySummaryResponse>>> getSummary(
+            @AuthenticationPrincipal LoginUser loginUser,
+            @RequestParam("start") LocalDate start,
+            @RequestParam("end") LocalDate end) {
+
+        List<DailySummaryResponse> response = todoService.getSummary(loginUser.getUserId(), start, end);
         return ResponseEntity.ok(ApiResponse.success(200, "조회 성공", response));
     }
 }

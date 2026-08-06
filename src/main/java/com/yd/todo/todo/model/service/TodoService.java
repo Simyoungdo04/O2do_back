@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.yd.todo.dailyList.model.dto.DailyListWithTodosResponse;
+import com.yd.todo.dailyList.model.dto.DailySummaryResponse;
 import com.yd.todo.dailyList.model.entity.DailyList;
 import com.yd.todo.dailyList.model.repository.DailyListRepository;
 import com.yd.todo.dailyList.model.service.DailyListService;
@@ -33,15 +34,16 @@ public class TodoService {
     private final DailyListService dailyListService;
     private final DailyListRepository dailyListRepository;
 
-    // 오늘 리스트에 새 TODO 생성 (원본 TODO)
+    // 지정한 날짜(미지정 시 오늘) 리스트에 새 TODO 생성 (원본 TODO)
     @Transactional
     public TodoResponse create(Long userId, TodoCreateRequest request) {
-        DailyList todayList = dailyListService.getOrCreate(userId, LocalDate.now());
+        LocalDate targetDate = request.getTargetDate() != null ? request.getTargetDate() : LocalDate.now();
+        DailyList targetList = dailyListService.getOrCreate(userId, targetDate);
 
         Todo todo = todoRepository.save(Todo.builder()
-                .dailyList(todayList)
-                .title(request.getTitle())
-                .memo(request.getMemo())
+                .dailyList(targetList)
+                .title(request.getTitle().strip())
+                .memo(request.getMemo() != null ? request.getMemo().strip() : null)
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .originTodoId(null)
@@ -49,12 +51,12 @@ public class TodoService {
 
         todo.assignOriginIfRoot();   // 원본이므로 자기 자신의 id를 origin으로 고정
 
-        return TodoResponse.from(todo, 1);   // 방금 생성된 원본이므로 이월 일수 1
+        return TodoResponse.from(todo, 1, todo.isDone());   // 방금 생성된 원본이므로 이월 일수 1
     }
 
     public List<TodoResponse> findTodosByDailyListId(Long dailyListId) {
         return todoRepository.findByDailyListId(dailyListId).stream()
-                .map(todo -> TodoResponse.from(todo, computeCarryOverDays(todo)))
+                .map(todo -> TodoResponse.from(todo, computeCarryOverDays(todo), resolveEffectiveDone(todo)))
                 .toList();
     }
 
@@ -67,8 +69,9 @@ public class TodoService {
     @Transactional
     public TodoResponse update(Long userId, Long todoId, TodoUpdateRequest request) {
         Todo todo = getOwnedTodo(userId, todoId);
-        todo.update(request.getTitle(), request.getMemo(), request.getStartTime(), request.getEndTime());
-        return TodoResponse.from(todo, computeCarryOverDays(todo));
+        String strippedMemo = request.getMemo() != null ? request.getMemo().strip() : null;
+        todo.update(request.getTitle().strip(), strippedMemo, request.getStartTime(), request.getEndTime());
+        return TodoResponse.from(todo, computeCarryOverDays(todo), resolveEffectiveDone(todo));
     }
 
     // 완료 상태 토글
@@ -76,15 +79,20 @@ public class TodoService {
     public TodoResponse toggleDone(Long userId, Long todoId) {
         Todo todo = getOwnedTodo(userId, todoId);
         todo.toggleDone();
-        return TodoResponse.from(todo, computeCarryOverDays(todo));
+        return TodoResponse.from(todo, computeCarryOverDays(todo), resolveEffectiveDone(todo));
     }
 
-    // 수동 이월: 과거의 미완료 TODO를 오늘 리스트로 복제
+    // 수동 이월: 과거의 미완료 TODO를 오늘 리스트로 복제 (원본은 '밀린 할 일'에서 숨겨짐)
     @Transactional
     public TodoResponse carryOver(Long userId, Long todoId) {
         Todo origin = getOwnedTodo(userId, todoId);
+        if (origin.isCarried()) {
+            throw new IllegalArgumentException("이미 오늘로 가져온 할 일입니다.");
+        }
+
         Todo copied = copyToDate(userId, origin, LocalDate.now());
-        return TodoResponse.from(copied, computeCarryOverDays(copied));
+        origin.markCarried(copied.getId());
+        return TodoResponse.from(copied, computeCarryOverDays(copied), resolveEffectiveDone(copied));
     }
 
     // 오늘의 미완료 TODO를 내일 리스트로 미루기 (원본은 '오늘의 할 일'에서 숨겨짐)
@@ -97,7 +105,7 @@ public class TodoService {
 
         Todo copied = copyToDate(userId, origin, LocalDate.now().plusDays(1));
         origin.postpone(copied.getId());
-        return TodoResponse.from(copied, computeCarryOverDays(copied));
+        return TodoResponse.from(copied, computeCarryOverDays(copied), resolveEffectiveDone(copied));
     }
 
     // 내일로 미루기 취소: 복제본을 삭제하고 원본을 다시 '오늘의 할 일'에 노출
@@ -135,6 +143,21 @@ public class TodoService {
                 rootOriginId, todo.getDailyList().getListDate());
     }
 
+    // 이 TODO 자신 또는 미루기/당겨오기로 이어진 복제본 체인을 끝까지 따라가서 최종 완료 여부를 계산
+    // (미룬/당겨온 원본은 자기 자신이 완료 처리될 일이 없어서 done이 항상 false로 고정되는 문제를 보완)
+    private boolean resolveEffectiveDone(Todo todo) {
+        Todo current = todo;
+        int guard = 0;
+        while (!current.isDone() && (current.isPostponed() || current.isCarried()) && guard++ < 50) {
+            Long nextId = current.isPostponed() ? current.getPostponedTodoId() : current.getCarriedTodoId();
+            current = todoRepository.findById(nextId).orElse(null);
+            if (current == null) {
+                return false;
+            }
+        }
+        return current.isDone();
+    }
+
     // 오늘 리스트 + 오늘의 TODO 전체를 함께 반환 (내일로 미룬 항목은 제외)
     public DailyListWithTodosResponse findTodayDailyList(Long userId) {
         DailyList todayList = dailyListService.getOrCreate(userId, LocalDate.now());
@@ -165,7 +188,10 @@ public class TodoService {
 
         List<Todo> pastIncomplete = todoRepository
                 .findByDailyList_User_IdAndDoneFalseAndDailyList_ListDateLessThanOrderByDailyList_ListDateDesc(
-                        userId, LocalDate.now());
+                        userId, LocalDate.now())
+                .stream()
+                .filter(todo -> !todo.isCarried())   // 이미 오늘로 당겨온 항목은 '밀린 할 일'에서 제외
+                .toList();
 
         List<Todo> all = new ArrayList<>(postponedToday);
         all.addAll(pastIncomplete);
@@ -180,8 +206,24 @@ public class TodoService {
                 .map(todos -> DailyListWithTodosResponse.of(
                         todos.get(0).getDailyList(),
                         todos.stream()
-                                .map(todo -> TodoResponse.from(todo, computeCarryOverDays(todo)))
+                                .map(todo -> TodoResponse.from(todo, computeCarryOverDays(todo), resolveEffectiveDone(todo)))
                                 .toList()))
+                .toList();
+    }
+
+    // 달력 마킹용: 기간 내 날짜별 TODO 총 개수/완료 개수 요약
+    public List<DailySummaryResponse> getSummary(Long userId, LocalDate start, LocalDate end) {
+        List<Todo> todos = todoRepository.findByDailyList_User_IdAndDailyList_ListDateBetween(userId, start, end);
+
+        Map<LocalDate, List<Todo>> groupedByDate = todos.stream()
+                .collect(Collectors.groupingBy(todo -> todo.getDailyList().getListDate()));
+
+        return groupedByDate.entrySet().stream()
+                .map(entry -> DailySummaryResponse.builder()
+                        .date(entry.getKey())
+                        .total(entry.getValue().size())
+                        .done((int) entry.getValue().stream().filter(Todo::isDone).count())
+                        .build())
                 .toList();
     }
 
@@ -190,6 +232,7 @@ public class TodoService {
     public void delete(Long userId, Long todoId) {
         Todo todo = getOwnedTodo(userId, todoId);
         todoRepository.findByPostponedTodoId(todoId).ifPresent(Todo::cancelPostpone);
+        todoRepository.findByCarriedTodoId(todoId).ifPresent(Todo::cancelCarry);
         todoRepository.delete(todo);
     }
 

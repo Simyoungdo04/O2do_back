@@ -43,6 +43,9 @@ public class Todo {
     @Column(name = "postponed_todo_id")
     private Long postponedTodoId;   // 내일로 미룬 경우 그 복제본의 id (미루지 않았으면 null)
 
+    @Column(name = "carried_todo_id")
+    private Long carriedTodoId;   // 오늘로 당겨온 경우 그 복제본의 id (당겨오지 않았으면 null)
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -94,6 +97,19 @@ public class Todo {
 
     public boolean isPostponed() {
         return this.postponedTodoId != null;
+    }
+
+    // 오늘(또는 다른 날짜)로 당겨옴: 복제본의 id를 기록해서 이 TODO는 '밀린 할 일'에서 제외됨
+    public void markCarried(Long carriedTodoId) {
+        this.carriedTodoId = carriedTodoId;
+    }
+
+    public boolean isCarried() {
+        return this.carriedTodoId != null;
+    }
+
+    public void cancelCarry() {
+        this.carriedTodoId = null;
     }
 
     // 이 TODO가 특정 유저 소유인지 확인 (컨트롤러/서비스에서 권한 체크용)

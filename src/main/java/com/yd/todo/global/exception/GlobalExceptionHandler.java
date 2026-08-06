@@ -1,7 +1,6 @@
 package com.yd.todo.global.exception;
 
-import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,7 +8,6 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -20,6 +18,8 @@ import com.yd.todo.global.exception.todo.TodoAccessDeniedException;
 import com.yd.todo.global.exception.todo.TodoNotFoundException;
 import com.yd.todo.global.exception.token.InvalidRefreshTokenException;
 import com.yd.todo.global.exception.token.RefreshTokenExpiredException;
+import com.yd.todo.global.exception.user.DuplicateLoginIdException;
+import com.yd.todo.global.exception.user.InvalidCredentialsException;
 import com.yd.todo.global.exception.user.UserNotFoundException;
 
 import lombok.extern.slf4j.Slf4j;
@@ -76,25 +76,35 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.fail(HttpStatus.UNAUTHORIZED.value(), e.getMessage()));
     }
 
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidCredentials(InvalidCredentialsException e) {
+        log.warn("InvalidCredentials: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.fail(HttpStatus.UNAUTHORIZED.value(), e.getMessage()));
+    }
+
+    // ---------- 중복 (409) ----------
+
+    @ExceptionHandler(DuplicateLoginIdException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateLoginId(DuplicateLoginIdException e) {
+        log.warn("DuplicateLoginId: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.fail(HttpStatus.CONFLICT.value(), e.getMessage()));
+    }
+
     // ---------- 요청 형식 오류 (400) ----------
 
     // @Valid 검증 실패 (예: title 누락 등)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, Object>>> handleValidation(
-            MethodArgumentNotValidException e, HandlerMethod handlerMethod) {
+    public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(err -> String.valueOf(err.getDefaultMessage()))
+                .distinct()
+                .collect(Collectors.joining(", "));
 
-        List<Map<String, String>> errors = e.getBindingResult().getFieldErrors().stream()
-                .map(err -> Map.of("field", err.getField(), "message", String.valueOf(err.getDefaultMessage())))
-                .toList();
-
-        Map<String, Object> payload = Map.of(
-                "controller", handlerMethod.getBeanType().getSimpleName(),
-                "method", handlerMethod.getMethod().getName(),
-                "errors", errors
-        );
-
+        log.warn("Validation failed: {}", message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(HttpStatus.BAD_REQUEST.value(), payload.toString()));
+                .body(ApiResponse.fail(HttpStatus.BAD_REQUEST.value(), message));
     }
 
     // URL 파라미터 타입 불일치 (예: /api/todos/abc → id 는 Long 이어야 함)

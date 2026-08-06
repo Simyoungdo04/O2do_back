@@ -35,15 +35,19 @@ public class User {
     @Column(name = "user_name", length = 50)
     private String userName;            // 카카오 닉네임 → null 가능
 
+    @Column(length = 100)
+    private String password;            // BCrypt 해시, LOCAL 계정만 사용 → 소셜 계정은 null
+
     @Column(name = "create_date", nullable = false, updatable = false)
     private LocalDateTime createDate;
 
     @Builder
-    public User(String provider, String providerId, String email, String userName) {
+    public User(String provider, String providerId, String email, String userName, String password) {
         this.provider = provider;
         this.providerId = providerId;
         this.email = email;
         this.userName = userName;
+        this.password = password;
     }
 
     @PrePersist

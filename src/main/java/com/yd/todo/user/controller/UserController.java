@@ -5,16 +5,20 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yd.todo.global.auth.LoginUser;
 import com.yd.todo.global.common.ApiResponse;
+import com.yd.todo.user.model.dto.LocalLoginRequest;
 import com.yd.todo.user.model.dto.LoginResponse;
+import com.yd.todo.user.model.dto.SignupRequest;
 import com.yd.todo.user.model.dto.UserResponse;
 import com.yd.todo.user.model.service.UserService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -32,6 +36,16 @@ public class UserController {
 	@PostMapping("/login/google")
 	public ResponseEntity<ApiResponse<LoginResponse>> googleLogin(@RequestParam(value = "code", required = true) String code) {
 	    return ResponseEntity.ok().body(ApiResponse.success(200, "로그인 성공", userService.googleLogin(code)));
+	}
+
+	@PostMapping("/signup")
+	public ResponseEntity<ApiResponse<LoginResponse>> signup(@RequestBody @Valid SignupRequest request) {
+	    return ResponseEntity.ok().body(ApiResponse.success(200, "회원가입 성공", userService.signup(request)));
+	}
+
+	@PostMapping("/login/local")
+	public ResponseEntity<ApiResponse<LoginResponse>> localLogin(@RequestBody @Valid LocalLoginRequest request) {
+	    return ResponseEntity.ok().body(ApiResponse.success(200, "로그인 성공", userService.localLogin(request)));
 	}
 
 	@GetMapping("/mypage")
