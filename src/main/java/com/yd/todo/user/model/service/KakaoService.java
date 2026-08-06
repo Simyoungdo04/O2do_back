@@ -8,7 +8,9 @@ import com.yd.todo.user.model.vo.KakaoTokenResponse;
 import com.yd.todo.user.model.vo.KakaoUserInfo;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class KakaoService {
@@ -26,6 +28,7 @@ public class KakaoService {
 
     // 인가코드 → 카카오 액세스 토큰 발급
     public String getKakaoAccessToken(String code) {
+    	log.info("[KAKAO DEBUG] client_id=[{}] redirect_uri=[{}] code=[{}]", clientId, redirectUri, code);
     	KakaoTokenResponse response = restClient.post()
                 .uri("https://kauth.kakao.com/oauth/token")
                 .header("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")

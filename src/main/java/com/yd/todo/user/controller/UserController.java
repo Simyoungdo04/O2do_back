@@ -25,7 +25,7 @@ public class UserController {
 	private final UserService userService;
 	
 	@PostMapping("/login/kakao")
-	public ResponseEntity<ApiResponse<LoginResponse>> kakaoLogin(@RequestParam String code) {
+	public ResponseEntity<ApiResponse<LoginResponse>> kakaoLogin(@RequestParam(value = "code", required = true) String code) {
 	    return ResponseEntity.ok().body(ApiResponse.success(200, "로그인 성공", userService.kakaoLogin(code)));
 	}
 	
