@@ -14,6 +14,7 @@ import com.yd.todo.user.model.dto.LoginResponse;
 import com.yd.todo.user.model.dto.UserResponse;
 import com.yd.todo.user.model.entity.User;
 import com.yd.todo.user.model.repository.UserRepository;
+import com.yd.todo.user.model.vo.GoogleUserInfo;
 import com.yd.todo.user.model.vo.KakaoUserInfo;
 
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final KakaoService kakaoService;
+    private final GoogleService googleService;
     private final TokenService tokenService;
     private final TodoRepository todoRepository;
     private final DailyListRepository dailyListRepository;
@@ -46,6 +48,35 @@ public class UserService {
                 .orElseGet(() -> userRepository.save(User.builder()
                         .provider("KAKAO")
                         .providerId(info.getProviderId())
+                        .email(info.getEmail())
+                        .userName(info.getUserName())
+                        .build()));
+
+        Map<String, String> tokens = tokenService.getTokens(user.getId());
+
+        return LoginResponse.builder()
+                .accessToken(tokens.get("accessToken"))
+                .refreshToken(tokens.get("refreshToken"))
+                .user(UserResponse.from(user))
+                .build();
+    }
+
+    // 구글 로그인 = 신규면 가입, 기존이면 로그인 (인가코드 하나로 전부 처리)
+    @Transactional
+    public LoginResponse googleLogin(String code) {
+        String googleAccessToken = googleService.getGoogleAccessToken(code);
+        GoogleUserInfo info = googleService.getUserInfo(googleAccessToken);
+
+        User user = userRepository
+                .findByProviderAndProviderId("GOOGLE", info.getProviderId())
+                .map(existing -> {
+                    existing.updateProfile(info.getEmail(), info.getUserName());   // 재로그인 시 정보 갱신
+                    return existing;
+                })
+                .orElseGet(() -> userRepository.save(User.builder()
+                        .provider("GOOGLE")
+                        .providerId(info.getProviderId())
+                        .email(info.getEmail())
                         .userName(info.getUserName())
                         .build()));
 

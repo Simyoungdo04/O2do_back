@@ -34,6 +34,7 @@ public class JwtFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getRequestURI();
         return uri.equals("/api/user/login/kakao")
+                || uri.equals("/api/user/login/google")
                 || uri.equals("/api/token/refresh");
     }
     

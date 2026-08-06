@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.GET, "/health").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/user/login/kakao/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/user/login/google/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/token/refresh").permitAll()   // 추가
                         .anyRequest().authenticated()
                 )

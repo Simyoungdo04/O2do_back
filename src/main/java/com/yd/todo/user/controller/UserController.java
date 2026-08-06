@@ -28,7 +28,12 @@ public class UserController {
 	public ResponseEntity<ApiResponse<LoginResponse>> kakaoLogin(@RequestParam(value = "code", required = true) String code) {
 	    return ResponseEntity.ok().body(ApiResponse.success(200, "로그인 성공", userService.kakaoLogin(code)));
 	}
-	
+
+	@PostMapping("/login/google")
+	public ResponseEntity<ApiResponse<LoginResponse>> googleLogin(@RequestParam(value = "code", required = true) String code) {
+	    return ResponseEntity.ok().body(ApiResponse.success(200, "로그인 성공", userService.googleLogin(code)));
+	}
+
 	@GetMapping("/mypage")
 	public ResponseEntity<ApiResponse<UserResponse>> findUserInfo(@AuthenticationPrincipal LoginUser loginUser) {
 		return ResponseEntity.ok().body(ApiResponse.success(200, "유저정보 조회 성공", userService.findUserInfo(loginUser.getUserId())));
